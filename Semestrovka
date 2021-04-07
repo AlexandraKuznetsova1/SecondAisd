@@ -1,0 +1,189 @@
+#include <bits/stdc++.h>
+#include <memory>
+#include <thread>
+#include <chrono>
+#include <mutex>
+#include <vector>
+#define all(x) x.begin(), x.end()
+using namespace std;
+using ll = long long;//
+using ld = long double;//
+const ll INF = 998244353;
+ 
+struct AANode { //узел
+    int level;//уровень
+    int key;//ключ
+    AANode* left;//левый узел
+    AANode* right;//правый узел
+    AANode(int level_, int key_, AANode* left_, AANode* right_) {//конструктор
+        level = level_;
+        key = key_;
+        left = left_;
+        right = right_;
+    }
+};
+ 
+class AATree {//класс дерево
+public:
+    void Insert(int key) {//вставлять
+        Root = InternalInsert(Root, key);//корень,внутренняя вставка
+    }
+ 
+    void Delete(int key) {//удалить
+        Root = InternalDelete(Root, key);//
+    }
+ 
+    void Print() {//печатать
+        InternalPrint(Root);//
+        std::cout << std::endl;
+    }
+ 
+    bool Search(int key) {//поиск
+        return InternalSearch(Root, key);//внутренняя поиск
+    }
+ 
+private:
+    AANode* Split(AANode* node) {//узел
+        if (node == nullptr || node->right == nullptr || node->right->right == nullptr) {
+            return node;
+        }
+        if (node->level == node->right->right->level) {
+            AANode* R_node = node->right;
+            AANode* B_node = R_node->left;
+            node->right = B_node;
+            R_node->left = node;
+            R_node->level++;
+            return R_node;
+        }
+        return node;
+ 
+    }
+ 
+    AANode* Skew(AANode* node) {//скос
+        if (node == nullptr || node->left == nullptr) {
+            return node;
+        }
+        if (node->level == node->left->level) {
+            AANode* L_node = node->left;
+            AANode* B_node = L_node->right;
+            L_node->right = node;
+            node->left = B_node;
+            return L_node;
+        }
+        return node;
+    }
+ 
+    AANode* InternalInsert(AANode* node, int key) {//
+        if (node == nullptr) {
+            AANode* result = new AANode(1, key, nullptr, nullptr);//
+            return result;//
+        }
+        if (node->key > key) {
+            node->left = InternalInsert(node->left, key);//
+        } else {
+            node->right = InternalInsert(node->right, key);//
+        }
+        node = Split(node);//расщеплять
+        node = Skew(node);//скос
+        return node;
+    }
+ 
+    void InternalPrint(AANode* node) {//
+        if (node == nullptr) {
+            return;
+        }
+        InternalPrint(node->left);//
+        std::cout << node->key << ", ";
+        InternalPrint(node->right);
+ 
+    }
+ 
+    void FixLevel(AANode* node) {//исправить уровень
+        if (node->left == nullptr || node->right == nullptr) {
+            return;
+        }
+        int correct_level = std::min(node->left->level, node->right->level) + 1;//правильный уровень
+        if (correct_level < node->level) {
+            node->level = correct_level;
+            if (correct_level < node->right->level) {
+                node->right->level = correct_level;
+            }
+        }
+    }
+ 
+    AANode* InternalDelete(AANode* node, int key) {//
+        if (node == nullptr) {
+            return node;
+        }
+        if (node->key > key) {
+            node->left = InternalDelete(node->left, key);
+        } else if (node->key < key) {
+            node->right = InternalDelete(node->right, key);
+        } else {
+            if (node->left == nullptr && node->right == nullptr) {
+                return nullptr;//
+            }
+            if (node->left == nullptr) {
+                AANode* left_node = node->right;
+                while (left_node->left) {
+                    left_node = left_node->left;
+                }
+                node->key = left_node->key;
+                node->right = InternalDelete(node->right, left_node->key);
+            } else {
+                AANode* right_node = node->left;
+                while (right_node->right) {
+                    right_node = right_node->right;
+                }
+                node->key = right_node->key;
+                node->left = InternalDelete(node->left, right_node->key);//
+            }
+        }
+        FixLevel(node);//
+        node = Skew(node);//
+        node->right = Skew(node->right);
+        if (node->right != nullptr) {//
+            node->right->right = Skew(node->right->right);
+        }
+        node = Split(node);//
+        node->right = Split(node->right);
+        return node;//
+    }
+ 
+    bool InternalSearch(AANode* node, int key) {//
+        if (node == nullptr) {
+            return false;
+        }
+        if (node->key == key) {
+            return true;
+        }
+        if (node->key > key) {
+            return InternalSearch(node->left, key);//
+        } else {
+            return InternalSearch(node->right, key);//
+        }
+    }
+    AANode* Root = nullptr;//
+};
+ 
+int main() {//
+    AATree aa_tree;//
+    vector<int> a = {2, 13, 78, 5, 29, 8000, 1, 0};//
+    for (const auto x : a) {//
+        std::cout << x << ", ";
+    }
+    std::cout << "\n-------------\n";
+    for (const auto x : a) {//
+        aa_tree.Insert(x);//
+        aa_tree.Print();//
+        if (aa_tree.Search(x)) std::cout << "Has: " << x << std::endl;//
+    }
+    std::cout << "\n-------------\n";
+    for (int i = a.size() - 1; i >= 0; i--) {
+        aa_tree.Delete(a[i]);//
+        aa_tree.Print();//
+    }
+    return 0;
+
+    }
+
